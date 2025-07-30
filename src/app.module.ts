@@ -8,6 +8,7 @@ import { FilesModule } from './files/files.module';
 import { AuthModule } from './auth/auth.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { MessagesWsModule } from './message-ws/messages-ws.module';
 
 @Module({
   imports: [
@@ -38,6 +39,8 @@ import { join } from 'path';
      FilesModule,
 
      AuthModule,
+
+     MessagesWsModule,
   ],
 })
 export class AppModule {}
