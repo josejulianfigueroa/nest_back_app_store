@@ -38,10 +38,9 @@ export class User {
     emailVerified: boolean;
 
     @Column('text', {
-        array: true,
-        default: ['user']
+        default: 'user'
     })
-    roles: string[];
+    role: string;
 
     @OneToMany(
         () => Product,
