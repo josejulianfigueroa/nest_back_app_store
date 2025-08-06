@@ -2,6 +2,8 @@ import { BeforeInsert, BeforeUpdate, Column, Entity, ManyToOne, OneToMany, Prima
 import { ProductImage } from './product-image.entity';
 import { User } from 'src/auth/entities/user.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { ProductCategory } from './product-category.entity';
+import { OrderItem } from 'src/orders/entities/order-item.entity';
 
 @Entity({ name: 'products' })
 export class Product {
@@ -104,6 +106,20 @@ export class Product {
         // producto com un campo al ser consultado, lo agrega el json
     )
     user: User
+
+    @ManyToOne(
+        () => ProductCategory,
+        ( productCategory ) => productCategory.product,
+        { eager: true } // Cargue la relacion con la que creo el 
+        // producto com un campo al ser consultado, lo agrega el json
+    )
+    productCategory: ProductCategory
+
+    @OneToMany(
+        () => OrderItem,
+        ( orderItem ) => orderItem.product
+    )
+    orderItem: OrderItem;
     
     @BeforeInsert()
     checkSlugInsert() {
@@ -127,6 +143,4 @@ export class Product {
             .replaceAll("'",'')
     }
 
-
 }
-

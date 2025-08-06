@@ -9,12 +9,19 @@ import { AuthModule } from './auth/auth.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { MessagesWsModule } from './message-ws/messages-ws.module';
+import { OrdersModule } from './orders/orders.module';
 
 @Module({
   imports: [
      ConfigModule.forRoot(),
 
      TypeOrmModule.forRoot({
+      ssl: process.env.STAGE === 'prod',
+      extra: {
+        ssl: process.env.STAGE === 'prod'
+              ? { rejectUnauthorized: false }
+              : null,
+      },
       type: 'postgres',
       host: process.env.DB_HOST,
       port: parseInt(process.env.DB_PORT ?? '5432', 10),
@@ -41,6 +48,8 @@ import { MessagesWsModule } from './message-ws/messages-ws.module';
      AuthModule,
 
      MessagesWsModule,
+
+     OrdersModule,
   ],
 })
 export class AppModule {}

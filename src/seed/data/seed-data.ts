@@ -10,7 +10,8 @@ interface SeedProduct {
     tags: string[];
     title: string;
     type: ValidTypes;
-    gender: 'men'|'women'|'kid'|'unisex'
+    gender: 'men'|'women'|'kid'|'unisex';
+    productCategory?: string; // Optional, used for linking to categories
 }
 
 type ValidSizes = 'XS'|'S'|'M'|'L'|'XL'|'XXL'|'XXXL';
@@ -23,14 +24,25 @@ interface SeedUser {
     roles:     string[];
 }
 
+interface SeedCategory {
+    name: string;
+}
 
 interface SeedData {
     users: SeedUser[];
     products: SeedProduct[];
+    categories: SeedCategory[];
 }
 
 
 export const initialData: SeedData = {
+
+    categories: [
+        { name: "shirts" },
+        { name: "pants" },
+        { name: "hoodies" },
+        { name: "hats" },
+   ],
 
     users: [
         {

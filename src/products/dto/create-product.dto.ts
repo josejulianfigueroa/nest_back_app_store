@@ -57,4 +57,7 @@ export class CreateProductDto {
     @IsOptional()
     images?: string[];
 
+    @IsString()
+    idProductCategory?: string;
+
 }

@@ -1,6 +1,7 @@
 import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Product } from '../../products/entities';
-
+import { UserAddress } from 'src/orders/entities/user-address.entity';
+import { Order } from 'src/orders/entities/order.entity';
 
 @Entity('users')
 export class User {
@@ -14,7 +15,12 @@ export class User {
     email: string;
 
     @Column('text', {
-        select: false
+         default: ''
+    })
+    image?: string;
+
+    @Column('text', {
+    select: false
     })
     password?: string;
 
@@ -25,6 +31,11 @@ export class User {
         default: true
     })
     isActive: boolean;
+
+    @Column('bool', {
+        default: false
+    })
+    emailVerified: boolean;
 
     @Column('text', {
         array: true,
@@ -37,6 +48,18 @@ export class User {
         ( product ) => product.user
     )
     product: Product;
+
+    @OneToMany(
+        () => UserAddress,
+        ( userAddress ) => userAddress.user
+    )
+    userAddress: UserAddress;
+
+    @OneToMany(
+        () => Order,
+        ( order ) => order.user
+    )
+    orders: Order[];
 
 
     @BeforeInsert()

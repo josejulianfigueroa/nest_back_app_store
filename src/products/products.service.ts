@@ -8,7 +8,7 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 import { Product } from './entities/product.entity';
 import { validate as isUUID } from 'uuid';
-import { ProductImage } from './entities';
+import { ProductCategory, ProductImage } from './entities';
 import { User } from 'src/auth/entities/user.entity';
 
 @Injectable()
@@ -24,6 +24,9 @@ export class ProductsService {
     @InjectRepository(ProductImage)
     private readonly productImageRepository: Repository<ProductImage>,
 
+    @InjectRepository( ProductCategory )
+    private readonly categoryRepository: Repository<ProductCategory>,
+
     private readonly dataSource: DataSource,
 
   ) {}
@@ -31,14 +34,29 @@ export class ProductsService {
 
 
   async create(createProductDto: CreateProductDto, user: User) {
-    
+
+    let category: ProductCategory | null = null;
+    category = await this.categoryRepository.findOneBy({ id: createProductDto.idProductCategory });
+
+    if ( !category ) {
+      throw new BadRequestException(`Category with id ${ createProductDto.idProductCategory } not found`);
+    }
+
     try {
-      const { images = [], ...productDetails } = createProductDto;
+      const { images = [] } = createProductDto;
 
       const product = this.productRepository.create({
-        ...productDetails,
+        tags: createProductDto.tags || [],
+        gender: createProductDto.gender,
+        sizes: createProductDto.sizes,
+        stock: createProductDto.stock || 0,
+        slug: createProductDto.slug?.toLowerCase() ?? '',
+        description: createProductDto.description || '',
+        price: createProductDto.price || 0,
+        title: createProductDto.title,
         images: images.map( image => this.productImageRepository.create({ url: image }) ),
         user,
+        productCategory: category
       });
       
       await this.productRepository.save( product );
