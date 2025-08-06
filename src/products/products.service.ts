@@ -73,22 +73,42 @@ export class ProductsService {
 
   async findAll( paginationDto: PaginationDto ) {
 
-    const { limit = 10, offset = 0 } = paginationDto;
+    let { page = 1, take = 12, gender} = paginationDto;
+
+    if (isNaN(Number(page))) page = 1;
+    if (page < 1) page = 1;
+     if (gender === '') {gender = undefined;}
 
     const products = await this.productRepository.find({
-      take: limit,
-      skip: offset,
+      take: take,
+      skip: (page - 1) * take,
       relations: {
         images: true,
-      }
+      },
+       where: {
+        gender: gender,
+     }
     })
-if( !products || products.length === 0 )
-      throw new NotFoundException('No products found');  
 
-    return products.map( ( product ) => ({
+     // 2. Obtener el total de páginas
+    // todo:
+    const totalCount = await this.productRepository.count({
+      where: {
+        gender: gender,
+      },
+    });
+    
+    const totalPages = Math.ceil(totalCount / take);
+
+    return {
+      currentPage: page,
+      totalPages: totalPages,
+      products: products.map( ( product ) => ({
       ...product,
       images: (product.images ?? []).map( img => img.url )
     }))
+    }
+
   }
 
   async findOne( term: string ) {
