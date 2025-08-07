@@ -3,6 +3,8 @@ import { SeedService } from './seed.service';
 import { SeedController } from './seed.controller';
 import { ProductsModule } from 'src/products/products.module';
 import { AuthModule } from 'src/auth/auth.module';
+import { Order } from 'src/orders/entities/order.entity';
+import { OrdersModule } from 'src/orders/orders.module';
 
 
 @Module({
@@ -10,6 +12,7 @@ import { AuthModule } from 'src/auth/auth.module';
   providers: [SeedService],
   imports: [
     ProductsModule,
+    OrdersModule,
     AuthModule
   ]
 })

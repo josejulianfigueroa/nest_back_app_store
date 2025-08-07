@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, OneToMany, PrimaryColumn } from "typeorm";
 import { UserAddress } from "./user-address.entity";
 import { OrderAddress } from "./order-address.entity";
 
@@ -6,7 +6,7 @@ import { OrderAddress } from "./order-address.entity";
 @Entity({ name: 'country' })
 export class Country {
 
-    @PrimaryGeneratedColumn('uuid')
+    @PrimaryColumn('text')
     id: string;
 
     @Column('text', {

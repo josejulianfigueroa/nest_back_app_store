@@ -5,6 +5,8 @@ import { ProductsService } from './../products/products.service';
 import { initialData } from './data/seed-data';
 import { User } from 'src/auth/entities/user.entity';
 import { ProductCategory } from 'src/products/entities';
+import { Country } from 'src/orders/entities/country.entity';
+import { UserAddress } from 'src/orders/entities/user-address.entity';
 
 
 @Injectable()
@@ -17,7 +19,13 @@ export class SeedService {
     private readonly userRepository: Repository<User>,
 
     @InjectRepository( ProductCategory )
-    private readonly categoryRepository: Repository<ProductCategory>
+    private readonly categoryRepository: Repository<ProductCategory>,
+
+    @InjectRepository( Country )
+    private readonly countryRepository: Repository<Country>,
+
+    @InjectRepository( UserAddress )
+    private readonly userAddressRepository: Repository<UserAddress>
   ) {}
 
 
@@ -25,14 +33,32 @@ export class SeedService {
   async runSeed() {
 
     await this.deleteTables();
+
     const adminUser = await this.insertUsers();
 
     const cat1 = await this.insertCategories();
+
+    await this.insertCountries();
 
     await this.insertNewProducts( adminUser, cat1 );
     
 
     return 'SEED EXECUTED';
+  }
+
+    private async insertCountries() {
+
+    const seedCountries = initialData.countries;
+    
+    const countries: Country[] = [];
+
+    seedCountries.forEach( cou => {
+      countries.push( this.countryRepository.create( cou ) )
+    });
+
+    await this.countryRepository.save( countries );
+
+    return;
   }
 
    private async insertCategories() {
@@ -93,8 +119,20 @@ export class SeedService {
       .where({})
       .execute()
 
+    const queryBuilder2 = this.userAddressRepository.createQueryBuilder();
+    await queryBuilder2
+      .delete()
+      .where({})
+      .execute()
+
     const queryBuilder = this.userRepository.createQueryBuilder();
     await queryBuilder
+      .delete()
+      .where({})
+      .execute()
+
+       const queryBuilder1 = this.countryRepository.createQueryBuilder();
+    await queryBuilder1
       .delete()
       .where({})
       .execute()
