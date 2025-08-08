@@ -4,9 +4,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ProductsService } from './../products/products.service';
 import { initialData } from './data/seed-data';
 import { User } from 'src/auth/entities/user.entity';
-import { ProductCategory } from 'src/products/entities';
+import { ProductCategory, ProductImage } from 'src/products/entities';
 import { Country } from 'src/orders/entities/country.entity';
 import { UserAddress } from 'src/orders/entities/user-address.entity';
+import { OrderAddress } from 'src/orders/entities/order-address.entity';
+import { OrderItem } from 'src/orders/entities/order-item.entity';
+import { Order } from 'src/orders/entities/order.entity';
 
 
 @Injectable()
@@ -25,7 +28,19 @@ export class SeedService {
     private readonly countryRepository: Repository<Country>,
 
     @InjectRepository( UserAddress )
-    private readonly userAddressRepository: Repository<UserAddress>
+    private readonly userAddressRepository: Repository<UserAddress>,
+
+    @InjectRepository( OrderAddress )
+    private readonly orderAddressRepository: Repository<OrderAddress>,
+
+    @InjectRepository( OrderItem )
+    private readonly orderItemRepository: Repository<OrderItem>,
+
+    @InjectRepository( Order )
+    private readonly orderRepository: Repository<Order>,
+
+    @InjectRepository( ProductImage )
+    private readonly productImageRepository: Repository<ProductImage>
   ) {}
 
 
@@ -111,7 +126,34 @@ export class SeedService {
 
   private async deleteTables() {
 
-    await this.productsService.deleteAllProducts();
+
+const queryBuilder02 = this.productImageRepository.createQueryBuilder();
+    await queryBuilder02
+      .delete()
+      .where({})
+      .execute()
+
+   const queryBuilder4 = this.orderAddressRepository.createQueryBuilder();
+    await queryBuilder4
+      .delete()
+      .where({})
+      .execute()
+
+  const queryBuilder2 = this.userAddressRepository.createQueryBuilder();
+    await queryBuilder2
+      .delete()
+      .where({})
+      .execute()
+
+  const queryBuilder3 = this.orderItemRepository.createQueryBuilder();
+    await queryBuilder3
+      .delete()
+      .where({})
+      .execute()
+
+
+
+   await this.productsService.deleteAllProducts();
 
     const queryBuilder0 = this.categoryRepository.createQueryBuilder();
     await queryBuilder0
@@ -119,20 +161,23 @@ export class SeedService {
       .where({})
       .execute()
 
-    const queryBuilder2 = this.userAddressRepository.createQueryBuilder();
-    await queryBuilder2
-      .delete()
-      .where({})
-      .execute()
 
-    const queryBuilder = this.userRepository.createQueryBuilder();
-    await queryBuilder
-      .delete()
-      .where({})
-      .execute()
 
-       const queryBuilder1 = this.countryRepository.createQueryBuilder();
+
+    const queryBuilder1 = this.countryRepository.createQueryBuilder();
     await queryBuilder1
+      .delete()
+      .where({})
+      .execute()
+    
+    const queryBuilder5 = this.orderRepository.createQueryBuilder();
+    await queryBuilder5
+      .delete()
+      .where({})
+      .execute()
+
+       const queryBuilder = this.userRepository.createQueryBuilder();
+    await queryBuilder
       .delete()
       .where({})
       .execute()

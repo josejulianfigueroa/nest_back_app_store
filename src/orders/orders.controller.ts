@@ -10,20 +10,32 @@ import { CreateUserAddressDto } from './dto/create-user-address.dto';
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
-  @Post()
-  create(@Body() createOrderDto: CreateOrderDto) {
-    return this.ordersService.create(createOrderDto);
+  @Post('create/order')
+  @Auth()
+  create(
+     @Body() createOrderDto: any,
+     @GetUser() user: User,) {
+    return this.ordersService.create(createOrderDto, user);
   }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.ordersService.findOne(id);
+  }
+
+  @Get('user/order')
+  @Auth()
+  findOrdersByUser(
+     @GetUser() user: User,) {
+    return this.ordersService.findOrdersByUser(user.id);}
+
 /*
   @Get()
   findAll() {
     return this.ordersService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.ordersService.findOne(+id);
-  }
+ 
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
@@ -34,9 +46,10 @@ export class OrdersController {
   remove(@Param('id') id: string) {
     return this.ordersService.remove(+id);
   }
-*/
+
   
-  @Get('countries')
+  */
+  @Get('countries/get')
     findAllCountries() {
       console.log('Fetching all countries');
       return this.ordersService.findAllCountries();
@@ -62,4 +75,5 @@ export class OrdersController {
   getAddressUser(  @GetUser() user: User,) {
     return this.ordersService.getAddressUser(user);
   }
+    
   }

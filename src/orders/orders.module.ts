@@ -8,12 +8,13 @@ import { AuthModule } from 'src/auth/auth.module';
 import { Order } from './entities/order.entity';
 import { OrderAddress } from './entities/order-address.entity';
 import { UserAddress } from './entities/user-address.entity';
+import { Product } from 'src/products/entities';
 
 @Module({
   controllers: [OrdersController],
   providers: [OrdersService],
     imports: [
-    TypeOrmModule.forFeature([ Country, Order, OrderItem, OrderAddress, UserAddress]),
+    TypeOrmModule.forFeature([ Country, Order, OrderItem, OrderAddress, UserAddress, Product]),
      AuthModule,
   ],
   exports: [

@@ -23,7 +23,7 @@ export class Order {
 
     @Column('int', {
     })
-    items_order: number;
+    itemsInOrder: number;
 
     @Column('bool', {
         default: false
@@ -31,10 +31,12 @@ export class Order {
     isPaid: boolean;
 
     @Column('date', {
+        default: null
     })
     paidAt: Date;
 
     @Column('date', {
+        default: new Date()
     })
     crerateddAt: Date;
 
