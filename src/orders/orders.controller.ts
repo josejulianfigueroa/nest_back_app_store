@@ -5,6 +5,7 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { Auth, GetUser } from 'src/auth/decorators';
 import { User } from 'src/auth/entities/user.entity';
 import { CreateUserAddressDto } from './dto/create-user-address.dto';
+import { UpdateOrderTransactionDto } from './dto/update-order-transaction.dto';
 
 @Controller('orders')
 export class OrdersController {
@@ -17,6 +18,14 @@ export class OrdersController {
      @GetUser() user: User,) {
     return this.ordersService.create(createOrderDto, user);
   }
+
+    @Post('update/order/:orderId')
+    update(
+    @Body() updateOrderDto: any,
+    @Param('orderId') orderId: string) {
+    return this.ordersService.updateOrder(updateOrderDto, orderId);
+  }
+
 
   @Get(':id')
   findOne(@Param('id') id: string) {

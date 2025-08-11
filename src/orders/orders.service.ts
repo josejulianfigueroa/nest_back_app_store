@@ -11,6 +11,7 @@ import { Product } from 'src/products/entities';
 import { Order } from './entities/order.entity';
 import { OrderAddress } from './entities/order-address.entity';
 import { v4 as uuidv4 } from 'uuid';
+import { UpdateOrderTransactionDto } from './dto/update-order-transaction.dto';
 
 @Injectable()
 export class OrdersService {
@@ -300,10 +301,50 @@ const products = await this.productRepository
   .getOne();
   }
 
-  update(id: number, updateOrderDto: UpdateOrderDto) {
-    return `This action updates a #${id} order`;
-  }
+  async updateOrder(updateOrderDto: UpdateOrderTransactionDto, id: string) {
+    
+    const orderExists = await this.orderRepository.findOneBy({ id });
 
+    if (!orderExists) {
+      throw new BadRequestException(`Order with id ${id} not found`);
+    }
+
+    if(updateOrderDto.transactionId !== undefined
+       && updateOrderDto.transactionId !== null
+      && updateOrderDto.transactionId !== '') {
+
+       const {
+           isPaid,
+           paidAt,
+          ...dataUpdate 
+       } = updateOrderDto;
+
+       const dateUpdateSave = await this.orderRepository.preload({ id, ...dataUpdate });  
+                    
+            if (!dateUpdateSave) {
+              throw new BadRequestException('id order not found for update');
+            }
+            return await this.orderRepository.save( dateUpdateSave );
+  }
+  else if (updateOrderDto.isPaid !== undefined
+       && updateOrderDto.isPaid !== null){
+
+        const {
+           transactionId,
+          ...dataUpdate 
+       } = updateOrderDto;
+
+       const dateUpdateSave = await this.orderRepository.preload({ id, ...dataUpdate });  
+                    
+            if (!dateUpdateSave) {
+              throw new BadRequestException('id order not found for update');
+            }
+            return await this.orderRepository.save( dateUpdateSave );
+  }
+    else {
+      throw new BadRequestException('transactionId or isPaid is required for update');
+    }
+  }
   remove(id: number) {
     return `This action removes a #${id} order`;
   }
