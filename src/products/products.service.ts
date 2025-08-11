@@ -10,6 +10,7 @@ import { Product } from './entities/product.entity';
 import { validate as isUUID } from 'uuid';
 import { ProductCategory, ProductImage } from './entities';
 import { User } from 'src/auth/entities/user.entity';
+import { UpdateImagesProductDto } from './dto/update-images-product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -70,6 +71,9 @@ export class ProductsService {
 
   }
 
+ async findAllCategories( ) {
+    return await this.categoryRepository.find({});
+  }
 
   async findAll( paginationDto: PaginationDto ) {
 
@@ -124,7 +128,8 @@ export class ProductsService {
           title: term.toUpperCase(),
           slug: term.toLowerCase(),
         })
-        .leftJoinAndSelect('prod.images','prodImages')// prodImages es un alias para las imagenes
+        .leftJoinAndSelect('prod.images','prodImages')
+        .leftJoinAndSelect('prod.productCategory','productCategory')// prodImages es un alias para las imagenes
         .getOne();
     }
 
@@ -140,6 +145,10 @@ export class ProductsService {
       ...rest,
       images: images.map( image => image.url )
     }
+  }
+
+   async findOnebyImage( term: string ) {
+    return await this.findOne( term );
   }
 
   async update( id: string, updateProductDto: UpdateProductDto, user: User ) {
@@ -185,9 +194,53 @@ export class ProductsService {
 
   }
 
+   async updateImagesByProduct( id: string, updateImagesProductDto: UpdateImagesProductDto, user: User ) {
+
+    const { images, ...rest } = updateImagesProductDto;
+
+    const product = await this.productRepository.findOneBy({ id });
+
+    if ( !product ) throw new NotFoundException(`Product with id: ${ id } not found`);
+
+    // Create query runner
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+
+      if( images) {
+        await queryRunner.manager.delete( ProductImage, { product: { id } });
+
+        product.images = images.map( 
+          image => this.productImageRepository.create({ url: image }) 
+        )
+      }
+
+     product.user = user;
+      await queryRunner.manager.save( product );
+      await queryRunner.commitTransaction();
+      await queryRunner.release();
+
+      return true;
+      
+    } catch (error) {
+
+      await queryRunner.rollbackTransaction();
+      await queryRunner.release();
+      this.handleDBExceptions(error);
+    }
+
+  }
+
   async remove(id: string) {
     const product = await this.findOne( id );
     await this.productRepository.remove( product );
+    
+  }
+
+    async removeImageById(id: string) {
+    await this.productImageRepository.delete( id );
     
   }
 

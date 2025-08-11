@@ -37,6 +37,10 @@ export class AuthController {
     return this.authService.checkAuthStatus( user );
   }
 
+   @Get('get/all')
+  findAll() {
+    return this.authService.findAll();
+  }
 
   @Get('private')
   @UseGuards( AuthGuard() )

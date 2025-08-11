@@ -38,7 +38,7 @@ export class Order {
     @Column('date', {
         default: new Date()
     })
-    crerateddAt: Date;
+    createAt: Date;
 
     @Column('text', {
     })    

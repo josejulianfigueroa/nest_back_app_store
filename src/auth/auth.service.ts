@@ -20,6 +20,11 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
+   findAll() {
+    return this.userRepository.find({
+    })
+  }
+
 
   async create( createUserDto: CreateUserDto) {
     

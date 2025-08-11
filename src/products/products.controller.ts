@@ -9,6 +9,7 @@ import { Auth, GetUser } from '../auth/decorators';
 import { User } from '../auth/entities/user.entity';
 import { ValidRoles } from '../auth/interfaces';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { UpdateImagesProductDto } from './dto/update-images-product.dto';
 
 @ApiTags('Products')
 @Controller('products')
@@ -32,9 +33,20 @@ export class ProductsController {
     return this.productsService.findAll( paginationDto );
   }
 
+  
+  @Get('categories/get/all')
+  findAllCategories( ) {
+    return this.productsService.findAllCategories( );
+  }
+
   @Get(':term')
   findOne(@Param( 'term' ) term: string) {
     return this.productsService.findOnePlain( term );
+  }
+
+   @Get('images/:term')
+  findOnebyImage(@Param( 'term' ) term: string) {
+    return this.productsService.findOnebyImage( term );
   }
 
   @Patch(':id')
@@ -47,9 +59,26 @@ export class ProductsController {
     return this.productsService.update( id, updateProductDto, user );
   }
 
+   @Patch('images/update/:id')
+  @Auth( ValidRoles.admin )
+  updateImagesByProduct(
+    @Param('id', ParseUUIDPipe ) id: string, 
+    @Body() updateImagesProductDto: UpdateImagesProductDto,
+    @GetUser() user: User,
+  ) {
+    return this.productsService.updateImagesByProduct( id, updateImagesProductDto, user );
+  }
+
+
   @Delete(':id')
   @Auth( ValidRoles.admin )
   remove(@Param('id', ParseUUIDPipe ) id: string) {
     return this.productsService.remove( id );
+  }
+
+    @Delete('images/delete/:id')
+  @Auth( ValidRoles.admin )
+  removeImageById(@Param('id') id: string) {
+    return this.productsService.removeImageById( id );
   }
 }

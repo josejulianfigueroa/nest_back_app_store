@@ -38,11 +38,12 @@ export class OrdersController {
      @GetUser() user: User,) {
     return this.ordersService.findOrdersByUser(user.id);}
 
-/*
-  @Get()
+  @Get('get/all')
   findAll() {
     return this.ordersService.findAll();
   }
+/*
+ 
 
  
 

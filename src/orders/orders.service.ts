@@ -244,7 +244,14 @@ const products = await this.productRepository
     }
   
   findAll() {
-    return `This action returns all orders`;
+    return this.orderRepository.find({
+      relations: {
+        orderAddress: true,
+      },
+    order: {
+      createAt: 'desc'
+    },
+    })
   }
 
   async findOrdersByUser(id: string) {
@@ -264,7 +271,7 @@ const products = await this.productRepository
     'order.itemsInOrder',        // solo este campo de Order
     'order.isPaid',        // solo este campo de Order
     'order.paidAt',        // solo este campo de Order
-    'order.crerateddAt',        // solo este campo de Order       // solo este campo de Order
+    'order.createAt',        // solo este campo de Order       // solo este campo de Order
     'orderItem.quantity',    // solo este campo de OrderItem
     'product',               // todos los campos de product
     'images',                // todos los campos de images
@@ -291,7 +298,7 @@ const products = await this.productRepository
     'order.itemsInOrder',        // solo este campo de Order
     'order.isPaid',        // solo este campo de Order
     'order.paidAt',        // solo este campo de Order
-    'order.crerateddAt',        // solo este campo de Order       // solo este campo de Order
+    'order.createAt',        // solo este campo de Order       // solo este campo de Order
     'orderItem.quantity',    // solo este campo de OrderItem
     'product',               // todos los campos de product
     'images',                // todos los campos de images
