@@ -11,6 +11,7 @@ import { validate as isUUID } from 'uuid';
 import { ProductCategory, ProductImage } from './entities';
 import { User } from 'src/auth/entities/user.entity';
 import { UpdateImagesProductDto } from './dto/update-images-product.dto';
+import { PaginationOffsetDto } from 'src/common/dto/pagination-offset.dto';
 
 @Injectable()
 export class ProductsService {
@@ -75,7 +76,25 @@ export class ProductsService {
     return await this.categoryRepository.find({});
   }
 
-  async findAll( paginationDto: PaginationDto ) {
+  async findAllWithOffsetMobile( paginationDto: PaginationOffsetDto ) {
+
+      const { limit = 10, offset = 0 } = paginationDto;
+
+    const products = await this.productRepository.find({
+      take: limit,
+      skip: offset,
+      relations: {
+        images: true,
+      }
+    })
+
+   return products.map( ( product ) => ({
+      ...product,
+      images: (product.images ?? []).map( img => img.url )
+    }))
+
+  }
+async findAll( paginationDto: PaginationDto ) {
 
     let { page = 1, take = 12, gender} = paginationDto;
 
@@ -114,7 +133,6 @@ export class ProductsService {
     }
 
   }
-
   async findOne( term: string ) {
 
     let product: Product | null = null;
@@ -153,10 +171,23 @@ export class ProductsService {
 
   async update( id: string, updateProductDto: UpdateProductDto, user: User ) {
 
-    const { images, ...toUpdate } = updateProductDto;
+      let category: ProductCategory | null = null;
+
+    if(updateProductDto.idProductCategory){
+  
+    category = await this.categoryRepository.findOneBy({ id: updateProductDto.idProductCategory });
+
+    if ( !category ) {
+      throw new BadRequestException(`Category with id ${ updateProductDto.idProductCategory } not found`);
+    }
+
+    }
 
 
-    const product = await this.productRepository.preload({ id, ...toUpdate });
+    const { images, idProductCategory, ...toUpdate } = updateProductDto;
+
+   
+    const product = await this.productRepository.preload({ id, ...toUpdate});
 
     if ( !product ) throw new NotFoundException(`Product with id: ${ id } not found`);
 

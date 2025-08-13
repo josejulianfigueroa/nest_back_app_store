@@ -10,6 +10,7 @@ import { User } from '../auth/entities/user.entity';
 import { ValidRoles } from '../auth/interfaces';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { UpdateImagesProductDto } from './dto/update-images-product.dto';
+import { PaginationOffsetDto } from 'src/common/dto/pagination-offset.dto';
 
 @ApiTags('Products')
 @Controller('products')
@@ -31,6 +32,11 @@ export class ProductsController {
   @Get()
   findAll( @Query() paginationDto:PaginationDto ) {
     return this.productsService.findAll( paginationDto );
+  }
+
+   @Get('list/offset')
+  findAllWithOffsetMobile( @Query() paginationDto:PaginationOffsetDto ) {
+    return this.productsService.findAllWithOffsetMobile( paginationDto );
   }
 
   
