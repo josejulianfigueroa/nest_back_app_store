@@ -10,6 +10,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { MessagesWsModule } from './message-ws/messages-ws.module';
 import { OrdersModule } from './orders/orders.module';
+import { PushNotificationModule } from './push-notification/push-notification.module';
 
 @Module({
   imports: [
@@ -50,6 +51,8 @@ import { OrdersModule } from './orders/orders.module';
      MessagesWsModule,
 
      OrdersModule,
+
+     PushNotificationModule,
   ],
 })
 export class AppModule {}
