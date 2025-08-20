@@ -247,6 +247,7 @@ const products = await this.productRepository
     return this.orderRepository.find({
       relations: {
         orderAddress: true,
+        orderItem: true
       },
     order: {
       createAt: 'desc'
