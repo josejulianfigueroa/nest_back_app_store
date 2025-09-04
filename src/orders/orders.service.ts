@@ -3,7 +3,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Country } from './entities/country.entity';
-import { DataSource, In, Repository } from 'typeorm';
+import { Between, Brackets, DataSource, In, Repository } from 'typeorm';
 import { UserAddress } from './entities/user-address.entity';
 import { CreateUserAddressDto } from './dto/create-user-address.dto';
 import { User } from 'src/auth/entities/user.entity';
@@ -12,6 +12,7 @@ import { Order } from './entities/order.entity';
 import { OrderAddress } from './entities/order-address.entity';
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateOrderTransactionDto } from './dto/update-order-transaction.dto';
+import { OrderItem } from './entities/order-item.entity';
 
 @Injectable()
 export class OrdersService {
@@ -26,7 +27,10 @@ export class OrdersService {
       @InjectRepository( Country )
       private readonly countryRepository: Repository<Country>,
 
-       @InjectRepository( UserAddress )
+      @InjectRepository( OrderItem )
+      private readonly orderItemRepository: Repository<OrderItem>,
+
+      @InjectRepository( UserAddress )
       private readonly addressUserRepository: Repository<UserAddress>,
 
       @InjectRepository( OrderAddress )
@@ -51,7 +55,6 @@ export class OrdersService {
   async create(createOrderDto: CreateOrderDto, user: User){
 
       // Obtener la información de los productos
-  // Nota: recuerden que podemos llevar 2+ productos con el mismo ID
 
 const products = await this.productRepository
   .createQueryBuilder('product')
@@ -59,7 +62,12 @@ const products = await this.productRepository
     ids: 
       createOrderDto.products.map(p => p.productId)
   })
+  .andWhere('product.client.id = :client', { client: user.client.id })
   .getMany();
+
+   if (products.length == 0) {
+          throw new BadRequestException(`Productos no encontrados`);
+        }
   // Calcular los montos // Encabezado
   const itemsInOrder = createOrderDto.products.reduce((count, p) => count + p.quantity, 0);
 
@@ -125,6 +133,8 @@ const products = await this.productRepository
           price: products.find( p => p.id === item.productId )?.price || 0,
         })),
         transactionId: uuidv4(),
+        canal: createOrderDto.canal,
+        client: user.client
       });
 
       const orderSaved = await queryRunner.manager.save(order);
@@ -186,13 +196,13 @@ const products = await this.productRepository
     
   }
 
-    async getAddressUser(user: User) {
+  async getAddressUser(user: User) {
 
   return await this.addressUserRepository.findOneBy({ user: user });
     
   }
 
- async createUpdateAddressUser(createUserAddressDto: CreateUserAddressDto, user: User) {
+   async createUpdateAddressUser(createUserAddressDto: CreateUserAddressDto, user: User) {
 
     try {
 
@@ -243,27 +253,44 @@ const products = await this.productRepository
   
     }
   
-  findAll() {
+  findAll(status: string | undefined,  fechaInicio: string , fechaFin: string ) {
+    if (status === 'all') {
+      status = undefined;
+    }
     return this.orderRepository.find({
       relations: {
         orderAddress: true,
-        orderItem: true
+        orderItem: true,
+        client: true
       },
+      where: {
+      ...(status ? { status } : {}), // 👈 solo aplica si status !== undefined
+      createdAt: Between(new Date(fechaInicio), new Date(fechaFin)),
+    },
     order: {
-      createAt: 'desc'
+      createdAt: 'desc'
     },
     })
   }
 
-  async findOrdersByUser(id: string) {
-   return await this.orderRepository
+  async findOrdersByUser(id: string, status: string, fechaInicio: string , fechaFin: string) {
+  
+return await this.orderRepository
   .createQueryBuilder('order')
   .leftJoinAndSelect('order.user', 'user')
   .leftJoin('order.orderItem', 'orderItem')
   .leftJoinAndSelect('orderItem.product', 'product')
   .leftJoinAndSelect('product.images', 'images')
   .leftJoinAndSelect('order.orderAddress', 'orderAddress')
+  .leftJoinAndSelect('order.client', 'client')
   .where('order.user = :id', { id })
+  .andWhere(new Brackets(qb => {
+  if (status !== 'all') {
+    qb.andWhere('order.status = :status', { status });
+  }
+}))
+    .andWhere('order.createdAt >= :fechaInicio', { fechaInicio: new Date(fechaInicio) })
+    .andWhere('order.createdAt <= :fechaFin', { fechaFin: new Date(fechaFin) })
   .select([
     'order.id',        // solo este campo de Order
     'order.subTotal',        // solo este campo de Order
@@ -272,12 +299,19 @@ const products = await this.productRepository
     'order.itemsInOrder',        // solo este campo de Order
     'order.isPaid',        // solo este campo de Order
     'order.paidAt',        // solo este campo de Order
-    'order.createAt',        // solo este campo de Order       // solo este campo de Order
+    'order.createdAt',        // solo este campo de Order 
+    'order.status',
+    'order.canal',
+    'order.fechaEntrega',
+    'order.fechaCancelacion',
+    'order.fechaPreparacion',
+    'order.fechaTermino',
     'orderItem.quantity',    // solo este campo de OrderItem
     'product',               // todos los campos de product
     'images',                // todos los campos de images
     'user.id',                  // todos los campos de user
-    'orderAddress',          // todos los campos de orderAddress
+    'orderAddress',
+    'client'     
   ])
   .getMany();
   }
@@ -290,6 +324,7 @@ const products = await this.productRepository
   .leftJoinAndSelect('orderItem.product', 'product')
   .leftJoinAndSelect('product.images', 'images')
   .leftJoinAndSelect('order.orderAddress', 'orderAddress')
+  .leftJoinAndSelect('order.client', 'client')
   .where('order.id = :id', { id })
   .select([
     'order.id',        // solo este campo de Order
@@ -299,12 +334,19 @@ const products = await this.productRepository
     'order.itemsInOrder',        // solo este campo de Order
     'order.isPaid',        // solo este campo de Order
     'order.paidAt',        // solo este campo de Order
-    'order.createAt',        // solo este campo de Order       // solo este campo de Order
+    'order.createdAt',        // solo este campo de Order 
+    'order.status',
+    'order.canal',
+    'order.fechaEntrega',
+    'order.fechaCancelacion',
+    'order.fechaPreparacion',
+    'order.fechaTermino',
     'orderItem.quantity',    // solo este campo de OrderItem
     'product',               // todos los campos de product
     'images',                // todos los campos de images
     'user.id',                  // todos los campos de user
-    'orderAddress',          // todos los campos de orderAddress
+    'orderAddress',
+    'client'        
   ])
   .getOne();
   }
@@ -353,7 +395,99 @@ const products = await this.productRepository
       throw new BadRequestException('transactionId or isPaid is required for update');
     }
   }
-  remove(id: number) {
-    return `This action removes a #${id} order`;
+
+  async updateOrderStatus(status: string, id: string) {
+    
+    const orderExists = await this.orderRepository.findOneBy({ id });
+
+    if (!orderExists) {
+      throw new BadRequestException(`Order with id ${id} not found`);
+    }
+      // get status
+      //  cancelada, preparacion, entregada, terminada
+      if(status === 'cancelada' ){
+         const fechaCancelacion = new Date();
+
+           const toUpdate = {
+           status,
+           fechaCancelacion
+       };
+
+       return await this.updateStatusOrderDb(id, toUpdate);
+      }
+      else if(status === 'preparacion' ){
+          const fechaPreparacion = new Date();
+
+           const toUpdate = {
+           status,
+           fechaPreparacion
+       };
+
+       return await this.updateStatusOrderDb(id, toUpdate);
+      }
+       else if(status === 'entregada' ){
+         const fechaEntrega = new Date();
+
+           const toUpdate = {
+           status,
+           fechaEntrega
+       };
+
+       return await this.updateStatusOrderDb(id, toUpdate);
+       }
+        else if(status === 'terminada' ){
+
+          const fechaTermino = new Date();
+
+           const toUpdate = {
+           status,
+           fechaTermino
+       };
+
+       return await this.updateStatusOrderDb(id, toUpdate);
+        }
+         else {
+            throw new BadRequestException('Status Incorrecto');
+         }  
+  }
+
+  private async updateStatusOrderDb(id: string, toUpdate: any) {
+    
+    const dateUpdateSave = await this.orderRepository.preload({ id, ...toUpdate });
+
+    if (!dateUpdateSave) {
+      throw new BadRequestException('id order not found for update');
+    }
+    return await this.orderRepository.save(dateUpdateSave);
+  }
+
+  async remove(id: string) {
+
+    const order = await this.orderRepository.findOne( { where: { id }, relations: ['orderItem']});
+
+    if(order){
+
+      if(order.orderItem){
+        order.orderItem.forEach(async element => {
+   
+        const product = await this.productRepository.findOneBy({ id: element.product.id });
+
+      if (!product) throw new Error('Producto no encontrado');
+
+      product.stock = product.stock + element.quantity;
+
+      await this.productRepository.save(product);
+
+        });
+      }
+        await this.orderAddressRepository.delete({ order });
+        await this.orderItemRepository.delete({ order });
+        await this.orderRepository.remove( order );
+        return true;
+     }
+     else {
+       throw new BadRequestException(`Order not found`);
+     }
+       
   }
 }

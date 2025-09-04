@@ -9,7 +9,6 @@ import { Auth, GetUser } from '../auth/decorators';
 import { User } from '../auth/entities/user.entity';
 import { ValidRoles } from '../auth/interfaces';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
-import { UpdateImagesProductDto } from './dto/update-images-product.dto';
 import { PaginationOffsetDto } from 'src/common/dto/pagination-offset.dto';
 
 @ApiTags('Products')
@@ -17,7 +16,7 @@ import { PaginationOffsetDto } from 'src/common/dto/pagination-offset.dto';
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  @Post()
+  @Post('create')
   @Auth()
   @ApiResponse({ status: 201, description: 'Product was created', type: Product  })
   @ApiResponse({ status: 400, description: 'Bad request' })
@@ -29,33 +28,25 @@ export class ProductsController {
     return this.productsService.create(createProductDto, user );
   }
 
-  @Get()
-  findAll( @Query() paginationDto:PaginationDto ) {
-    return this.productsService.findAll( paginationDto );
+  @Get('get/all/:idClient/listar')
+  findAll( @Query() paginationDto:PaginationDto, 
+  @Param( 'idClient', ParseUUIDPipe ) idClient: string ) {
+    return this.productsService.findAll( paginationDto, idClient );
   }
 
-   @Get('list/offset')
-  findAllWithOffsetMobile( @Query() paginationDto:PaginationOffsetDto ) {
-    return this.productsService.findAllWithOffsetMobile( paginationDto );
+   @Get('get/offset/:idClient/listar')
+  findAllWithOffsetMobile( @Query() paginationDto:PaginationOffsetDto, 
+  @Param( 'idClient', ParseUUIDPipe ) idClient: string ) {
+    return this.productsService.findAllWithOffsetMobile( paginationDto, idClient );
   }
 
-  
-  @Get('categories/get/all')
-  findAllCategories( ) {
-    return this.productsService.findAllCategories( );
+  @Get('get/one/:idClient/:term')
+  findOne(@Param( 'term' ) term: string,
+          @Param( 'idClient', ParseUUIDPipe ) idClient: string ) {
+    return this.productsService.findOnePlain( term, idClient);
   }
 
-  @Get(':term')
-  findOne(@Param( 'term' ) term: string) {
-    return this.productsService.findOnePlain( term );
-  }
-
-   @Get('images/:term')
-  findOnebyImage(@Param( 'term' ) term: string) {
-    return this.productsService.findOnebyImage( term );
-  }
-
-  @Patch(':id')
+  @Patch('update/:id')
   @Auth( ValidRoles.admin )
   update(
     @Param('id', ParseUUIDPipe ) id: string, 
@@ -65,26 +56,12 @@ export class ProductsController {
     return this.productsService.update( id, updateProductDto, user );
   }
 
-   @Patch('images/update/:id')
+  @Delete('delete/:id/:idClient')
   @Auth( ValidRoles.admin )
-  updateImagesByProduct(
-    @Param('id', ParseUUIDPipe ) id: string, 
-    @Body() updateImagesProductDto: UpdateImagesProductDto,
-    @GetUser() user: User,
-  ) {
-    return this.productsService.updateImagesByProduct( id, updateImagesProductDto, user );
+  remove(@Param('id', ParseUUIDPipe ) id: string,  
+  @Param( 'idClient', ParseUUIDPipe ) idClient: string ) {
+    return this.productsService.remove( id, idClient );
   }
 
-
-  @Delete(':id')
-  @Auth( ValidRoles.admin )
-  remove(@Param('id', ParseUUIDPipe ) id: string) {
-    return this.productsService.remove( id );
-  }
-
-    @Delete('images/delete/:id')
-  @Auth( ValidRoles.admin )
-  removeImageById(@Param('id') id: string) {
-    return this.productsService.removeImageById( id );
-  }
+ 
 }

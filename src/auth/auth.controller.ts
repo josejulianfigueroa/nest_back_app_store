@@ -1,16 +1,14 @@
-import { Controller, Get, Post, Body, UseGuards, Req, Headers, SetMetadata } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req, Headers, SetMetadata, Param, ParseUUIDPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { IncomingHttpHeaders } from 'http';
-
 import { AuthService } from './auth.service';
 import { RawHeaders, GetUser, Auth } from './decorators';
 import { RoleProtected } from './decorators/role-protected.decorator';
-
 import { CreateUserDto, LoginUserDto } from './dto';
 import { User } from './entities/user.entity';
 import { UserRoleGuard } from './guards/user-role.guard';
 import { ValidRoles } from './interfaces';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -18,30 +16,38 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
 
-
   @Post('register')
+  @ApiResponse({ status: 201, description: 'User was created', type: CreateUserDto  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 403, description: 'Forbidden. Token related.' })
   createUser(@Body() createUserDto: CreateUserDto ) {
     return this.authService.create( createUserDto );
   }
 
   @Post('login')
+  @ApiResponse({ status: 400, description: 'Bad request' })
   loginUser(@Body() loginUserDto: LoginUserDto ) {
     return this.authService.login( loginUserDto );
   }
 
   @Get('check-status')
   @Auth()
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 403, description: 'Forbidden. Token related.' })
   checkAuthStatus(
     @GetUser() user: User
   ) {
     return this.authService.checkAuthStatus( user );
   }
 
-   @Get('get/all')
-  findAll() {
-    return this.authService.findAll();
+   @Get('all/get/:idCliente')
+    @ApiResponse({ status: 400, description: 'Bad request' })
+  findAllUsers(@Param('idCliente', ParseUUIDPipe ) idCliente: string,  ) {
+    return this.authService.findAllUsers( idCliente );
   }
 
+
+/*
   @Get('private')
   @UseGuards( AuthGuard() )
   testingPrivateRoute(
@@ -92,7 +98,7 @@ export class AuthController {
       user
     }
   }
-
+*/
 
 
 }

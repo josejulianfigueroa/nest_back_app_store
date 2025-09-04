@@ -1,14 +1,15 @@
 import { BeforeInsert, BeforeUpdate, Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-import { ProductImage } from './product-image.entity';
 import { User } from 'src/auth/entities/user.entity';
 import { ApiProperty } from '@nestjs/swagger';
-import { ProductCategory } from './product-category.entity';
 import { OrderItem } from 'src/orders/entities/order-item.entity';
+import { Client } from 'src/clients/entities/client.entity';
+import { ProductCategory } from 'src/categories/entities/product-category.entity';
+import { ImagesProduct } from 'src/images-product/entities/images-product.entity';
 
 @Entity({ name: 'products' })
 export class Product {
 
-     @ApiProperty({
+    @ApiProperty({
         example: 'cd533345-f1f3-48c9-a62e-7dc2da50c8f8',
         description: 'Product ID',
         uniqueItems: true
@@ -19,15 +20,13 @@ export class Product {
     @ApiProperty({
         example: 'T-Shirt Teslo',
         description: 'Product Title',
-        uniqueItems: true
     })
     @Column('text', {
-        unique: true,
     })
     title: string;
 
     @ApiProperty({
-        example: 0,
+        example: 5000,
         description: 'Product price',
     })
     @Column('int',{
@@ -49,10 +48,8 @@ export class Product {
     @ApiProperty({
         example: 't_shirt_teslo',
         description: 'Product SLUG - for SEO',
-        uniqueItems: true
     })
     @Column('text', {
-        unique: true
     })
     slug: string;
 
@@ -67,13 +64,21 @@ export class Product {
     stock: number;
 
     @ApiProperty({
-        example: ['M','XL','XXL'],
-        description: 'Product sizes',
+        example: 'XL',
+        description: 'Product size',
     })
     @Column('text',{
-        array: true
     })
-    sizes: string[];
+    size: string;
+
+     @ApiProperty({
+        example: '5',
+        description: 'calificacion del producto',
+    })
+    @Column('float', {
+        default: 5
+    })
+    stars: number;
 
     @ApiProperty({
         example: 'women',
@@ -82,36 +87,62 @@ export class Product {
     @Column('text')
     gender: string;
 
-    @ApiProperty()
+     @ApiProperty({
+        example: ['megaproduct', 'tendencia'],
+        description: 'tags para referenciar el producto',
+    })
     @Column('text', {
         array: true,
         default: []
     })
     tags: string[];
 
-      // images
+    @ApiProperty({
+        example: '2025-10-10',
+        description: 'Fecha de Creacion del Producto',
+    })
+    @Column('date', {
+        default: new Date()
+    })
+    createdAt: Date;
+
+     @ApiProperty({
+        example: '2retiro_en_tienda',
+        description: 'Tipo de entrega del producto',
+    })
+    @Column('text', {
+        array: true,
+        default: ['retiro_en_local'] // delivery, consumo_local
+    })
+    opciones_entrega: string[];
+
+  
     @ApiProperty()
     @OneToMany(
-        () => ProductImage,
+        () => ImagesProduct,
         (productImage) => productImage.product,
-        { cascade: true, eager: true } // CVada vez que cargue un producto se cargaran las imagenes
+        { cascade: true, eager: true } 
     )
-    images?: ProductImage[];
+    images?: ImagesProduct[];
 
 
     @ManyToOne(
         () => User,
         ( user ) => user.product,
-        { eager: true } // Cargue la relacion con el usuario que creo el 
-        // producto com un campo al ser consultado, lo agrega el json
     )
-    user: User
+    user?: User
+
+    @ManyToOne(
+        () => Client,
+        ( client ) => client.product,
+        {eager: true}
+    )
+    client?: Client
 
     @ManyToOne(
         () => ProductCategory,
         ( productCategory ) => productCategory.product,
-        { eager: true } // Cargue la relacion con la que creo el 
-        // producto com un campo al ser consultado, lo agrega el json
+        { eager: true }
     )
     productCategory: ProductCategory
 

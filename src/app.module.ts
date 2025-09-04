@@ -11,6 +11,9 @@ import { join } from 'path';
 import { MessagesWsModule } from './message-ws/messages-ws.module';
 import { OrdersModule } from './orders/orders.module';
 import { PushNotificationModule } from './push-notification/push-notification.module';
+import { ClientsModule } from './clients/clients.module';
+import { CategoriesModule } from './categories/categories.module';
+import { ImagesProductModule } from './images-product/images-product.module';
 
 @Module({
   imports: [
@@ -53,6 +56,12 @@ import { PushNotificationModule } from './push-notification/push-notification.mo
      OrdersModule,
 
      PushNotificationModule,
+
+     ClientsModule,
+
+     CategoriesModule,
+
+     ImagesProductModule,
   ],
 })
 export class AppModule {}

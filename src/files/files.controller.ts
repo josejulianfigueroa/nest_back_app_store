@@ -4,7 +4,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { diskStorage } from 'multer';
 import { FilesService } from './files.service';
-
 import { fileFilter, fileNamer } from './helpers';
 import { ApiTags } from '@nestjs/swagger';
 
@@ -16,7 +15,7 @@ export class FilesController {
     private readonly configService: ConfigService,
   ) {}
 
-  @Get('product/:imageName')
+  @Get('image/product/get/:imageName')
   findProductImage(
     @Res() res: Response,
     @Param('imageName') imageName: string
@@ -29,7 +28,7 @@ export class FilesController {
 
 
 
-  @Post('product')
+  @Post('image/product/save')
   @UseInterceptors( FileInterceptor('file', {
     fileFilter: fileFilter,
     // limits: { fileSize: 1000 }
@@ -47,7 +46,7 @@ export class FilesController {
     }
 
     // const secureUrl = `${ file.filename }`;
-    const secureUrl = `${ this.configService.get('HOST_API') }/files/product/${ file.filename }`;
+    const secureUrl = `${ this.configService.get('HOST_API') }/files/image/product/get/${ file.filename }`;
 
     return { secureUrl };
   }

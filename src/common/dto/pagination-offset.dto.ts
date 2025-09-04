@@ -21,4 +21,7 @@ export class PaginationOffsetDto {
     @Type( () => Number ) // enableImplicitConversions: true
     offset?: number;
 
+    @IsOptional()
+    idProductCategory?: string;
+
 }

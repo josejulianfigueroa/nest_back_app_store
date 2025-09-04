@@ -4,12 +4,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ProductsService } from './../products/products.service';
 import { initialData } from './data/seed-data';
 import { User } from 'src/auth/entities/user.entity';
-import { ProductCategory, ProductImage } from 'src/products/entities';
 import { Country } from 'src/orders/entities/country.entity';
 import { UserAddress } from 'src/orders/entities/user-address.entity';
 import { OrderAddress } from 'src/orders/entities/order-address.entity';
 import { OrderItem } from 'src/orders/entities/order-item.entity';
 import { Order } from 'src/orders/entities/order.entity';
+import { ProductCategory } from 'src/categories/entities/product-category.entity';
+import { ImagesProduct } from 'src/images-product/entities/images-product.entity';
 
 
 @Injectable()
@@ -39,8 +40,8 @@ export class SeedService {
     @InjectRepository( Order )
     private readonly orderRepository: Repository<Order>,
 
-    @InjectRepository( ProductImage )
-    private readonly productImageRepository: Repository<ProductImage>
+    @InjectRepository( ImagesProduct )
+    private readonly productImageRepository: Repository<ImagesProduct>
   ) {}
 
 
@@ -109,12 +110,17 @@ export class SeedService {
   private async insertNewProducts( user: User, productCategory: ProductCategory ) {
     await this.productsService.deleteAllProducts();
 
-    const products = initialData.products;
+    const products = initialData.products.map( item => ({
+      ...item,
+      stars: 5,
+      opciones_entrega: ['delivery'],
+      idProductCategory : productCategory.id,
+      idClient : 'a37dca4c-69cc-43bd-b22f-7a50e37c2b7e',
+    }));
 
     const insertPromises: Promise<any>[] = [];
 
     products.forEach( product => {
-      product.productCategory = productCategory.id
       insertPromises.push( this.productsService.create( product , user,) );
     });
 

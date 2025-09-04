@@ -1,9 +1,10 @@
 export class CreateOrderDto {
 
-  
         products: ProductToOrder[];
 
-        address: Address
+        address: Address;
+
+        canal: string;
 }
 
 interface ProductToOrder {

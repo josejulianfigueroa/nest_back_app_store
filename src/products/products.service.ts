@@ -1,17 +1,16 @@
 import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
-
 import { Product } from './entities/product.entity';
 import { validate as isUUID } from 'uuid';
-import { ProductCategory, ProductImage } from './entities';
 import { User } from 'src/auth/entities/user.entity';
-import { UpdateImagesProductDto } from './dto/update-images-product.dto';
 import { PaginationOffsetDto } from 'src/common/dto/pagination-offset.dto';
+import { ProductCategory } from 'src/categories/entities/product-category.entity';
+import { ImagesProduct } from 'src/images-product/entities/images-product.entity';
+import { Client } from 'src/clients/entities/client.entity';
 
 @Injectable()
 export class ProductsService {
@@ -23,34 +22,54 @@ export class ProductsService {
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
 
-    @InjectRepository(ProductImage)
-    private readonly productImageRepository: Repository<ProductImage>,
+    @InjectRepository(ImagesProduct)
+    private readonly productImageRepository: Repository<ImagesProduct>,
 
     @InjectRepository( ProductCategory )
     private readonly categoryRepository: Repository<ProductCategory>,
+
+    @InjectRepository(Client)
+    private readonly clientRepository: Repository<Client>,
 
     private readonly dataSource: DataSource,
 
   ) {}
 
 
-
   async create(createProductDto: CreateProductDto, user: User) {
 
+      const client = await this.clientRepository.findOne({
+      where: { id: createProductDto.idClient }
+    });
+
+    if(!client){
+         throw new BadRequestException( "Cliente/Empresa no existe" );
+    }
+
     let category: ProductCategory | null = null;
-    category = await this.categoryRepository.findOneBy({ id: createProductDto.idProductCategory });
+    category = await this.categoryRepository.findOneBy({ id: createProductDto.idProductCategory,
+             client                                             
+     });
 
     if ( !category ) {
       throw new BadRequestException(`Category with id ${ createProductDto.idProductCategory } not found`);
     }
 
+      const productExist = await this.productRepository.findOne({
+      where: { client, productCategory: category, title: createProductDto.title   }
+    });
+
+    if(productExist){
+         throw new BadRequestException( "El producto ya existe en el cliente, categoria y titulo ingresado" );
+    }
+
     try {
       const { images = [] } = createProductDto;
 
-      const product = this.productRepository.create({
+      let product = this.productRepository.create({
         tags: createProductDto.tags || [],
         gender: createProductDto.gender,
-        sizes: createProductDto.sizes,
+        size: createProductDto.size,
         stock: createProductDto.stock || 0,
         slug: createProductDto.slug?.toLowerCase() ?? '',
         description: createProductDto.description || '',
@@ -58,11 +77,15 @@ export class ProductsService {
         title: createProductDto.title,
         images: images.map( image => this.productImageRepository.create({ url: image }) ),
         user,
-        productCategory: category
+        productCategory: category,
+        client,
+        stars: createProductDto.stars | 5,
+        opciones_entrega: createProductDto.opciones_entrega
       });
       
       await this.productRepository.save( product );
-
+      delete product.client;
+      delete product.user;
       return { ...product, images };
       
     } catch (error) {
@@ -72,20 +95,43 @@ export class ProductsService {
 
   }
 
- async findAllCategories( ) {
-    return await this.categoryRepository.find({});
-  }
+  async findAllWithOffsetMobile( paginationDto: PaginationOffsetDto, idClient: string ) {
 
-  async findAllWithOffsetMobile( paginationDto: PaginationOffsetDto ) {
+      const client = await this.clientRepository.findOne({
+      where: { id: idClient }
+    });
 
-      const { limit = 10, offset = 0 } = paginationDto;
+    if(!client){
+         throw new BadRequestException( "Cliente/Empresa no existe" );
+    }
+
+    const { limit = 10, offset = 0, idProductCategory } = paginationDto;
+
+      let categoryAux: ProductCategory | null | undefined = null;
+
+    if (idProductCategory === '' || idProductCategory === undefined ) {categoryAux = undefined;}
+
+    else {
+
+    categoryAux = await this.categoryRepository.findOneBy({ id: paginationDto.idProductCategory,
+             client                                             
+     });
+
+    if ( !categoryAux ) {
+      throw new BadRequestException(`Category with id ${ idProductCategory } not found`);
+    }
+}
 
     const products = await this.productRepository.find({
       take: limit,
       skip: offset,
       relations: {
         images: true,
-      }
+      },
+      where: {
+        client,
+         productCategory: categoryAux
+     }
     })
 
    return products.map( ( product ) => ({
@@ -94,13 +140,37 @@ export class ProductsService {
     }))
 
   }
-async findAll( paginationDto: PaginationDto ) {
 
-    let { page = 1, take = 12, gender} = paginationDto;
+  async findAll( paginationDto: PaginationDto, idClient:string ) {
 
+     const client = await this.clientRepository.findOne({
+      where: { id: idClient }
+    });
+
+    if(!client){
+         throw new BadRequestException( "Cliente/Empresa no existe" );
+    }
+
+    let { page = 1, take = 12, gender, idProductCategory} = paginationDto;
+
+    let categoryAux: ProductCategory | null | undefined = null;
+
+    if (idProductCategory === '' || idProductCategory === undefined ) {categoryAux = undefined;}
+
+    else {
+
+    categoryAux = await this.categoryRepository.findOneBy({ id: paginationDto.idProductCategory,
+             client                                             
+     });
+
+    if ( !categoryAux ) {
+      throw new BadRequestException(`Category with id ${ idProductCategory } not found`);
+    }
+}
+    
     if (isNaN(Number(page))) page = 1;
     if (page < 1) page = 1;
-     if (gender === '') {gender = undefined;}
+     if (gender === '' || gender === undefined) {gender = undefined;}
 
     const products = await this.productRepository.find({
       take: take,
@@ -110,14 +180,17 @@ async findAll( paginationDto: PaginationDto ) {
       },
        where: {
         gender: gender,
+        client,
+        productCategory: categoryAux
      }
     })
 
-     // 2. Obtener el total de páginas
-    // todo:
+     // Obtener el total de páginas
     const totalCount = await this.productRepository.count({
       where: {
         gender: gender,
+        client,
+        productCategory: categoryAux
       },
     });
     
@@ -133,21 +206,32 @@ async findAll( paginationDto: PaginationDto ) {
     }
 
   }
-  async findOne( term: string ) {
+
+  async findOne( term: string, idClient: string) {
+
+    const client = await this.clientRepository.findOne({
+      where: { id: idClient }
+    });
+
+    if(!client){
+         throw new BadRequestException( "Cliente/Empresa no existe" );
+    }
 
     let product: Product | null = null;
 
     if ( isUUID(term) ) {
-      product = await this.productRepository.findOneBy({ id: term });
+      product = await this.productRepository.findOneBy({ id: term, client });
     } else {
       const queryBuilder = this.productRepository.createQueryBuilder('prod'); 
       product = await queryBuilder
-        .where('UPPER(title) =:title or slug =:slug', {
+        .where('(UPPER(title) =:title or slug =:slug)', {
           title: term.toUpperCase(),
           slug: term.toLowerCase(),
         })
+        .andWhere('prod.clientId = :idClient', { idClient })
         .leftJoinAndSelect('prod.images','prodImages')
         .leftJoinAndSelect('prod.productCategory','productCategory')// prodImages es un alias para las imagenes
+        .leftJoinAndSelect('prod.client','client')
         .getOne();
     }
 
@@ -157,25 +241,29 @@ async findAll( paginationDto: PaginationDto ) {
     return product;
   }
 
-   async findOnePlain( term: string ) {
-    const { images = [], ...rest } = await this.findOne( term );
+   async findOnePlain( term: string, idClient: string ) {
+    const { images = [], ...rest } = await this.findOne( term, idClient );
     return {
       ...rest,
       images: images.map( image => image.url )
     }
   }
 
-   async findOnebyImage( term: string ) {
-    return await this.findOne( term );
-  }
-
   async update( id: string, updateProductDto: UpdateProductDto, user: User ) {
 
-      let category: ProductCategory | null = null;
+    const client = await this.clientRepository.findOne({
+      where: { id: updateProductDto.idClient }
+    });
+
+    if(!client){
+         throw new BadRequestException( "Cliente/Empresa no existe" );
+    }
+
+    let category: ProductCategory | null = null;
 
     if(updateProductDto.idProductCategory){
   
-    category = await this.categoryRepository.findOneBy({ id: updateProductDto.idProductCategory });
+    category = await this.categoryRepository.findOneBy({ id: updateProductDto.idProductCategory, client });
 
     if ( !category ) {
       throw new BadRequestException(`Category with id ${ updateProductDto.idProductCategory } not found`);
@@ -183,9 +271,7 @@ async findAll( paginationDto: PaginationDto ) {
 
     }
 
-
-    const { images, idProductCategory, ...toUpdate } = updateProductDto;
-
+    const { images, idProductCategory, idClient, ...toUpdate } = updateProductDto;
    
     const product = await this.productRepository.preload({ id, ...toUpdate});
 
@@ -199,7 +285,7 @@ async findAll( paginationDto: PaginationDto ) {
     try {
 
       if( images ) {
-        await queryRunner.manager.delete( ProductImage, { product: { id } });
+        await queryRunner.manager.delete( ImagesProduct, { product: { id } });
 
         product.images = images.map( 
           image => this.productImageRepository.create({ url: image }) 
@@ -214,7 +300,7 @@ async findAll( paginationDto: PaginationDto ) {
       await queryRunner.commitTransaction();
       await queryRunner.release();
 
-      return this.findOnePlain( id );
+      return this.findOnePlain( id, updateProductDto.idClient!);
       
     } catch (error) {
 
@@ -225,56 +311,18 @@ async findAll( paginationDto: PaginationDto ) {
 
   }
 
-   async updateImagesByProduct( id: string, updateImagesProductDto: UpdateImagesProductDto, user: User ) {
-
-    const { images, ...rest } = updateImagesProductDto;
-
-    const product = await this.productRepository.findOneBy({ id });
-
-    if ( !product ) throw new NotFoundException(`Product with id: ${ id } not found`);
-
-    // Create query runner
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-
-      if( images) {
-        await queryRunner.manager.delete( ProductImage, { product: { id } });
-
-        product.images = images.map( 
-          image => this.productImageRepository.create({ url: image }) 
-        )
-      }
-
-     product.user = user;
-      await queryRunner.manager.save( product );
-      await queryRunner.commitTransaction();
-      await queryRunner.release();
-
-      return true;
+  async remove(id: string, idClient: string) {
+    const product = await this.findOne( id, idClient );
       
-    } catch (error) {
-
-      await queryRunner.rollbackTransaction();
-      await queryRunner.release();
-      this.handleDBExceptions(error);
-    }
-
+    if(product){
+        await this.productRepository.remove( product );
+        return true;
+     }
+     else {
+       throw new BadRequestException(`Producto not found`);
+     }
+       
   }
-
-  async remove(id: string) {
-    const product = await this.findOne( id );
-    await this.productRepository.remove( product );
-    
-  }
-
-    async removeImageById(id: string) {
-    await this.productImageRepository.delete( id );
-    
-  }
-
 
   private handleDBExceptions( error: any ) {
 

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsIn, IsInt, IsNumber, IsOptional, 
-         IsPositive, IsString, MinLength 
+         IsPositive, IsString, IsUUID, MinLength 
 } from 'class-validator';
 
 export class CreateProductDto {
@@ -37,9 +37,8 @@ export class CreateProductDto {
     stock?: number; 
 
     @ApiProperty()
-    @IsString({ each: true })
-    @IsArray()
-    sizes: string[]
+    @IsString()
+    size: string
 
     @ApiProperty()
     @IsIn(['men','women','kid','unisex'])
@@ -57,7 +56,20 @@ export class CreateProductDto {
     @IsOptional()
     images?: string[];
 
+    @IsInt()
+    @IsPositive()
+    stars: number;
+
+    @IsString({ each: true })
+    @IsArray()
+    opciones_entrega: string[];
+
     @IsString()
+    @IsUUID('4', { message: 'El idProductCategory debe ser un UUID válido' })
     idProductCategory?: string;
+
+    @IsString()
+    @IsUUID('4', { message: 'El idClient debe ser un UUID válido' })
+    idClient: string;
 
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -20,10 +20,18 @@ export class OrdersController {
   }
 
     @Post('update/order/:orderId')
+    @Auth()
     update(
     @Body() updateOrderDto: any,
     @Param('orderId') orderId: string) {
     return this.ordersService.updateOrder(updateOrderDto, orderId);
+  }
+
+    @Post('update/order/status/:orderId/:status')
+    updateStatus(
+    @Param('status') status: string,
+    @Param('orderId') orderId: string) {
+    return this.ordersService.updateOrderStatus(status, orderId);
   }
 
 
@@ -32,39 +40,44 @@ export class OrdersController {
     return this.ordersService.findOne(id);
   }
 
-  @Get('user/order')
+  @Get('user/order/:status/:fechaInicio/:fechaFin')
   @Auth()
   findOrdersByUser(
-     @GetUser() user: User,) {
-    return this.ordersService.findOrdersByUser(user.id);}
+     @GetUser() user: User,
+     @Param('status') status: string,
+     @Param('fechaInicio') fechaInicio: string,
+     @Param('fechaFin') fechaFin: string) {
+    return this.ordersService.findOrdersByUser(user.id, status, fechaInicio, fechaFin);}
 
-  @Get('get/all')
-  findAll() {
-    return this.ordersService.findAll();
-  }
-/*
- 
-
- 
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
-    return this.ordersService.update(+id, updateOrderDto);
+  @Get('get/all/:status/:fechaInicio/:fechaFin')
+  findAll(@Param('status') status: string,
+          @Param('fechaInicio') fechaInicio: string,
+          @Param('fechaFin') fechaFin: string) {
+    return this.ordersService.findAll( status, fechaInicio, fechaFin);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.ordersService.remove(+id);
-  }
+  @Delete('delete/:id')
+  @Auth()
+    remove(@Param('id', ParseUUIDPipe ) id: string) {
+        return this.ordersService.remove( id );
+    }
 
-  
-  */
+   /**
+     * 
+     * Countries
+     */
   @Get('countries/get')
     findAllCountries() {
       console.log('Fetching all countries');
       return this.ordersService.findAllCountries();
     }
   
+
+    /**
+     * 
+     * AddressUser
+     */
+
   @Post('address/user')
   @Auth()
   createUpdateAddressUser(
